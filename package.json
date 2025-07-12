@@ -1,0 +1,36 @@
+{
+  "name": "bookstore-backend",
+  "version": "1.0.0",
+  "description": "Sistema completo de backend para bookstore con microservicios",
+  "scripts": {
+    "install-all": "cd services/books-api && npm install",
+    "deploy-dev": "./scripts/deploy-all.sh dev",
+    "deploy-test": "./scripts/deploy-all.sh test", 
+    "deploy-prod": "./scripts/deploy-all.sh prod",
+    "setup-elasticsearch": "./scripts/setup-elasticsearch.sh",
+    "logs-users": "sls logs -f app --stage dev --tail --path services/users-api",
+    "logs-books": "sls logs -f app --stage dev --tail --path services/books-api",
+    "logs-purchases": "sls logs -f app --stage dev --tail --path services/purchases-api"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.0",
+    "serverless-python-requirements": "^6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-usuario/bookstore-backend.git"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "dynamodb",
+    "elasticsearch",
+    "fastapi",
+    "nodejs",
+    "microservices"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT"
+}

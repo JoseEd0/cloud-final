@@ -1,0 +1,51 @@
+service: bookstore-backend
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    DYNAMODB_REGION: ${self:provider.region}
+    JWT_SECRET: ${file(./config/${self:provider.stage}.yml):JWT_SECRET}
+    ELASTICSEARCH_HOST: ${file(./config/${self:provider.stage}.yml):ELASTICSEARCH_HOST}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchGetItem
+        - dynamodb:BatchWriteItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/bookstore-*"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/bookstore-*/index/*"
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+      Resource:
+        - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}/*"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    slim: true
+    strip: false
+
+# Import all service configurations
+resources:
+  - ${file(./infrastructure/dynamodb.yml)}
+  - ${file(./infrastructure/s3-glue-athena.yml)}
