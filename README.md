@@ -1,15 +1,25 @@
-# 📚 Bookstore Backend - Sistema Completo de Microservicios
+# 📚 Bookstor---
 
-[![AWS](https://img.shields.io/badge/AWS-Cloud-orange)](https://aws.amazon.com/)
-[![Serverless](https://img.shields.io/badge/Serverless-Framework-red)](https://www.serverless.com/)
-[![Python](https://img.shields.io/badge/Python-3.9-blue)](https://www.python.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18-green)](https://nodejs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-teal)](https://fastapi.tiangolo.com/)
-[![DynamoDB](https://img.shields.io/badge/DynamoDB-NoSQL-purple)](https://aws.amazon.com/dynamodb/)
+## 🎯 Sistema Completo de Microserviciosackend - Sistema Serverless
 
-## 🏗️ Descripción del Proyecto
+## 🚀 INICIO RÁPIDO
 
-Sistema completo de backend para una librería online construido con arquitectura de microservicios serverless en AWS. Incluye gestión de usuarios, catálogo de libros, sistema de compras, ingesta de datos en tiempo real y analytics avanzados.
+### Para empezar AHORA mismo:
+
+📖 **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Tu guía completa paso a paso
+
+### ⚠️ LO MÁS IMPORTANTE:
+
+- **Todo se ejecuta desde tu computadora local**
+- **AWS Academy Lab debe estar iniciado** (círculo verde)
+- **Credenciales se renuevan cada 4 horas**
+- **Elasticsearch corre en Docker local**
+
+---
+
+## � Sistema Completo de Microservicios
+
+Sistema de backend para librería online con arquitectura serverless en AWS Academy.
 
 ### ✨ Características Principales
 
@@ -26,55 +36,32 @@ Sistema completo de backend para una librería online construido con arquitectur
 
 ## 🏛️ Arquitectura del Sistema
 
-### Stack Tecnológico
+### Stack Tecnológico Optimizado para AWS Academy
 
-| Componente        | Tecnología                | Propósito                 |
-| ----------------- | ------------------------- | ------------------------- |
-| **APIs**          | FastAPI + Node.js Express | Microservicios REST       |
-| **Base de Datos** | DynamoDB                  | NoSQL escalable           |
-| **Búsqueda**      | Elasticsearch             | Búsqueda semántica        |
-| **Analytics**     | S3 + Glue + Athena        | Data Lake y consultas SQL |
-| **Streaming**     | DynamoDB Streams + Lambda | Ingesta tiempo real       |
-| **Autenticación** | JWT                       | Seguridad stateless       |
-| **Orquestación**  | Serverless Framework      | IaC y despliegue          |
+| Componente        | Tecnología                | Dónde se ejecuta     |
+| ----------------- | ------------------------- | -------------------- |
+| **APIs**          | FastAPI + Node.js Express | AWS Lambda           |
+| **Base de Datos** | DynamoDB                  | AWS Cloud            |
+| **Búsqueda**      | Elasticsearch             | Docker Local         |
+| **Analytics**     | S3 + Glue + Athena        | AWS Cloud            |
+| **Streaming**     | DynamoDB Streams + Lambda | AWS Cloud            |
+| **Despliegue**    | Serverless Framework      | Tu computadora local |
 
-### Diagrama de Arquitectura
+### Flujo de Trabajo
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Users API     │    │   Books API     │    │ Purchases API   │
-│   (FastAPI)     │    │   (Node.js)     │    │   (FastAPI)     │
-│   Port: 443     │    │   Port: 443     │    │   Port: 443     │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │       DynamoDB            │
-                    │  ┌─────────────────────┐  │
-                    │  │ Tables:             │  │
-                    │  │ • users             │  │
-                    │  │ • books             │  │
-                    │  │ • user_favorites    │  │
-                    │  │ • user_wishlist     │  │
-                    │  │ • shopping_cart     │  │
-                    │  │ • purchases         │  │
-                    │  └─────────────────────┘  │
-                    └─────────────┬─────────────┘
-                                  │ Streams
-                    ┌─────────────┴─────────────┐
-                    │     Lambda Processors     │
-                    │ ┌─────────┐ ┌───────────┐ │
-                    │ │ Books   │ │ Purchases │ │
-                    │ │ Stream  │ │ Stream    │ │
-                    │ └─────────┘ └───────────┘ │
-                    └─────┬─────────────┬───────┘
-                          │             │
-              ┌───────────┴──┐     ┌────┴─────┐
-              │ Elasticsearch│     │    S3    │
-              │ Multi-tenant │     │Analytics │
-              │    Docker    │     │  Bucket  │
-              └──────────────┘     └──────────┘
+Tu Computadora Local          AWS Academy Cloud
+┌─────────────────┐          ┌─────────────────┐
+│ Docker Desktop  │          │ AWS Lambda      │
+│ ├─Elasticsearch │          │ ├─Users API     │
+│ └─Multi-tenant  │          │ ├─Books API     │
+│                 │          │ └─Purchases API │
+│ VS Code/Terminal│  deploy  │                 │
+│ Serverless CLI  │ ──────►  │ DynamoDB Tables │
+│                 │          │ S3 Buckets      │
+│ AWS CLI         │          │ Stream Processor│
+│ (credenciales)  │          │                 │
+└─────────────────┘          └─────────────────┘
 ```
 
 ---
