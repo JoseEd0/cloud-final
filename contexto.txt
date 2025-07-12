@@ -1,0 +1,209 @@
+Proyecto Final - CS2032 Cloud Computing - Temática: Libros
+Información General del Proyecto
+Funcionalidad Principal
+
+Búsqueda de Productos (libros) con funcionalidades avanzadas
+Compra de libros con carrito de compras y historial
+Ingesta en Tiempo Real para procesamiento de datos
+Arquitectura Multi-tenancy para soporte de múltiples inquilinos
+
+Rúbrica de Evaluación (Total: 20 puntos)
+
+BackEnd: 6 puntos
+Ingesta en Tiempo Real - Ciencia de Datos: 6 puntos
+FrontEnd: 5 puntos
+Diagrama de Arquitectura Solución: 1 punto
+Exposición presencial: 2 puntos
+
+CRÍTICO: Si no se presenta a la exposición presencial, la evaluación será desaprobatoria (sobre nota 10 como máximo).
+
+1. BACKEND (6 puntos) - ESPECIFICACIONES DETALLADAS
+Temática Asignada: Libros
+
+Referencia: https://www.iberolibrerias.com/
+Productos: Libros con atributos como ISBN, título, autor, editorial, precio, descripción, categoría, etc.
+
+Microservicio 1: API Usuarios
+
+Tecnología: Python con DynamoDB
+Arquitectura: Multi-tenancy y Serverless
+Funcionalidades específicas:
+
+Crear usuario: Registro de nuevos usuarios en el sistema
+Login de usuario: Autenticación que devuelve token de acceso válido por 1 hora
+Validar token: Verificación de validez del token de acceso
+
+
+
+Microservicio 2: API Productos (Libros)
+
+Tecnología: Node.js con DynamoDB
+Arquitectura: Multi-tenancy y Serverless
+Protección: Protegida con token de acceso
+Funcionalidades específicas:
+
+ListarProductos (paginado): Mostrar catálogo completo de libros con paginación
+CrearProducto: Agregar nuevos libros al catálogo
+BuscarProducto (Por Código): Búsqueda exacta por ISBN o código del libro
+ModificarProducto: Editar información existente de libros
+EliminarProducto: Remover libros del catálogo
+
+
+
+Microservicio 3: API Compras
+
+Tecnología: Python o Node.js con DynamoDB
+Arquitectura: Multi-tenancy y Serverless
+Protección: Protegida con token de acceso
+Funcionalidades específicas:
+
+Registrar compra: Procesar la compra de libros por el usuario
+Listar compras: Mostrar todas las compras históricas de un usuario
+
+
+
+Arquitectura Backend (Representación textual del diagrama)
+[API Usuarios (Python)] ←→ [DynamoDB Usuarios] (Microservicio 1)
+[API Productos (Node.js)] ←→ [DynamoDB Productos] (Microservicio 2)
+[API Compras (Python/Node.js)] ←→ [DynamoDB Compras] (Microservicio 3)
+Requisitos Técnicos Obligatorios del Backend
+
+Automatización del despliegue: Usar framework serverless en 3 stages (dev, test, prod)
+Incluir tablas DynamoDB: En el despliegue automatizado
+Documentación API: Visualizar todas las APIs en swagger-ui
+Repositorios públicos: Incluir enlaces a repositorios públicos de GitHub con las fuentes
+
+
+2. INGESTA EN TIEMPO REAL - CIENCIA DE DATOS (6 puntos) - ESPECIFICACIONES DETALLADAS
+Change Data Capture (CDC)
+
+Investigar y habilitar: Funcionalidad de DynamoDB Streams
+Aplicar en: Tablas DynamoDB de API Productos y API Compras
+Objetivo: Capturar en tiempo real todos los cambios en las tablas
+Referencia técnica: https://docs.aws.amazon.com/es_es/amazondynamodb/latest/developerguide/Streams.html
+
+Máquina Virtual de Búsqueda
+
+Implementar: Una Máquina Virtual con 1 contenedor ElasticSearch por tenant_id
+Características: Cada contenedor con su propio volumen para persistencia
+Funcionalidad: Habilitar APIs REST de ElasticSearch
+Referencia técnica: https://hub.docker.com/_/elasticsearch
+Nota: Para producción se recomienda AWS OpenSearch (no disponible en AWS Academy)
+
+Lambda Actualizar Productos
+
+Conexión: Se conecta a DynamoDB Streams de la tabla Productos
+Función: Actualizar productos en ElasticSearch en tiempo real
+Eventos que captura:
+
+Nuevo Producto
+Modificar Producto
+Eliminar Producto
+
+
+
+Lambda Actualizar Compras
+
+Conexión: Se conecta a DynamoDB Streams de la tabla Compras
+Función: Actualizar compras como archivos CSV o JSON en S3
+Eventos que captura:
+
+Nueva Compra
+
+
+Procesamiento adicional:
+
+Habilitar Catálogo de Datos (AWS Glue)
+Mostrar evidencia de 3 queries SQL con Amazon Athena
+
+
+
+Arquitectura de Ingesta (Representación textual del diagrama)
+[API Productos (Node.js)] ←→ [DynamoDB Productos] → [DynamoDB Streams]
+                                                           ↓
+                                                    [Lambda Actualizar Productos]
+                                                           ↓
+[MV Búsqueda: 1 Contenedor ElasticSearch x tenant_id (Docker)] ←→ [Volume (Persistencia índices)]
+                                                           ↓
+                                                    [API REST ElasticSearch]
+
+[API Compras (Python/Node.js)] ←→ [DynamoDB Compras] → [DynamoDB Streams]
+                                                           ↓
+                                                    [Lambda Actualizar Compras]
+                                                           ↓
+                                                    [Bucket S3]
+                                                           ↓
+                                                    [Catálogo de Datos (Glue)]
+                                                           ↓
+                                                    [Consultas SQL (Athena)]
+Requisitos Técnicos Obligatorios de Ingesta
+
+Repositorios públicos: Incluir enlaces a repositorios públicos de GitHub con las fuentes de los lambdas de ingesta
+Evidencia de Athena: Mostrar 3 queries SQL ejecutadas exitosamente
+
+
+3. FRONTEND (5 puntos) - ESPECIFICACIONES DETALLADAS
+Características Generales
+
+Tipo: Página web Multi-tenancy
+Despliegue: En bucket S3 de AWS
+Framework: Del lado del cliente de preferencia
+Opciones de framework:
+
+JavaScript puro
+JavaScript con framework: React.js, Angular.js, Vue.js
+
+
+
+Funcionalidades de Autenticación
+
+Crear usuario: Registro de nuevos usuarios
+Login de usuario: Autenticación con token
+
+Mantenimiento de Productos (Libros)
+
+ListarProductos (paginado): Mostrar catálogo completo con paginación
+CrearProducto: Agregar nuevos libros al sistema
+BuscarProducto (Por Código): Búsqueda exacta por ISBN/código
+ModificarProducto: Editar información de libros existentes
+EliminarProducto: Remover libros del catálogo
+
+Sistema de Búsqueda Avanzada por Descripción
+Cuadro de texto para Búsqueda de Productos con las siguientes capacidades:
+Búsqueda Fuzzy
+
+Funcionalidad: Búsqueda tolerante a errores tipográficos
+Ejemplo para libros: Buscar "ficcion" en vez de "ficción"
+Referencia técnica: https://www.zewsweb.com/glosario/f/fuzzy-search-busqueda-difusa/
+
+Búsqueda por Prefijo
+
+Funcionalidad: Búsqueda por inicio de palabras
+Ejemplo para libros: Buscar todos los libros que inician con "hist" (historia, histórico, etc.)
+
+Búsqueda con Autocompletado
+
+Funcionalidad: Mientras el usuario escribe se muestran resultados en tiempo real
+Implementación: Lista desplegable con resultados dinámicos
+Referencia técnica: https://www.elastic.co/search-labs/blog/elasticsearch-autocomplete-search
+
+Sistema de Compras Completo
+Selección de Productos
+
+Elegir producto: De la lista de resultados de búsqueda
+Mostrar todos los productos: Encontrados en la web para posterior elección
+Especificar cantidad: Permitir al usuario definir cantidad de libros
+Adicionar al carrito: Agregar libros seleccionados al carrito de compras
+
+Proceso de Compra
+
+Visualizar carrito: Mostrar todos los libros del carrito con sus cantidades
+Registrar compra: Procesar la transacción completa
+
+Historial de Compras
+
+Listar compras: Mostrar todas las compras históricas del usuario
+
+Requisitos Técnicos Obligatorios del Frontend
+
+Repositorio público: Incluir enlace a repositorio público de GitHub con las fuentes
