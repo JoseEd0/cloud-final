@@ -124,7 +124,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/images-api/dev/1752399418181-2025-07-13T09:36:58.181Z/images-api.zip"
+                "S3Key": "serverless/images-api/dev/1752416376174-2025-07-13T14:19:36.174Z/images-api.zip"
               },
               "Handler": "app.lambda_handler",
               "Runtime": "python3.9",
@@ -369,7 +369,7 @@
               "AppLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1752399416987": {
+          "ApiGatewayDeployment1752416375239": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -553,9 +553,7 @@
       "vpc": {}
     },
     "custom": {},
-    "plugins": [
-      "serverless-offline"
-    ],
+    "plugins": null,
     "pluginsData": {},
     "functions": {
       "app": {
@@ -626,15 +624,13 @@
       "provider": {
         "$ref": "$[\"service\"][\"provider\"]"
       },
-      "plugins": {
-        "$ref": "$[\"service\"][\"plugins\"]"
-      },
       "custom": {
         "$ref": "$[\"service\"][\"custom\"]"
       },
       "functions": {
         "$ref": "$[\"service\"][\"functions\"]"
-      }
+      },
+      "plugins": null
     },
     "org": "joseed",
     "layers": {},
@@ -643,7 +639,7 @@
     "artifact": "C:\\Users\\jhuam\\Desktop\\AWS_Final\\services\\images-api\\.serverless\\images-api.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/images-api/dev/1752399418181-2025-07-13T09:36:58.181Z",
+    "artifactDirectoryName": "serverless/images-api/dev/1752416376174-2025-07-13T14:19:36.174Z",
     "artifact": "images-api.zip"
   }
 }

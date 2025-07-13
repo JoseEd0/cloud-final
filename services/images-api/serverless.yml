@@ -32,7 +32,7 @@ provider:
         - "arn:aws:s3:::bookstore-images-${self:provider.stage}-328458381283"
 
 plugins:
-  - serverless-offline
+  # - serverless-offline  # Comentado para despliegue en AWS Academy
 
 custom: {}
 

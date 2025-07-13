@@ -42,8 +42,8 @@ provider:
       Resource:
         - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}-*/*"
 
-plugins:
-  - serverless-offline
+# plugins:
+#   - serverless-offline
 
 custom: {}
 

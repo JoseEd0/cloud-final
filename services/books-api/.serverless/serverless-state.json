@@ -17,7 +17,7 @@
         "REGION": "us-east-1",
         "DYNAMODB_REGION": "us-east-1",
         "BOOKS_TABLE": "bookstore-books-dev",
-        "ELASTICSEARCH_HOST": "http://44.195.59.230:9201"
+        "ELASTICSEARCH_HOST": "http://35.170.54.115:9201"
       },
       "iamRoleStatements": [
         {
@@ -125,7 +125,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/books-api/dev/1752398757858-2025-07-13T09:25:57.858Z/books-api.zip"
+                "S3Key": "serverless/books-api/dev/1752413755547-2025-07-13T13:35:55.547Z/books-api.zip"
               },
               "Handler": "app.handler",
               "Runtime": "nodejs18.x",
@@ -138,7 +138,7 @@
                   "REGION": "us-east-1",
                   "DYNAMODB_REGION": "us-east-1",
                   "BOOKS_TABLE": "bookstore-books-dev",
-                  "ELASTICSEARCH_HOST": "http://44.195.59.230:9201"
+                  "ELASTICSEARCH_HOST": "http://35.170.54.115:9201"
                 }
               },
               "Role": "arn:aws:iam::328458381283:role/LabRole"
@@ -147,14 +147,14 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionnkmjqRNsA1tAR9VUGYdAREnjsizfLxOjmIFVW4J7hg": {
+          "AppLambdaVersionaL4MiruKomhR88tLcUXoQbiimpkEkZhefFTfuxMvv1Q": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "vougekNzgn4/RnkQNQ36oTfzfDlxngqfEXJzLbXXD/0="
+              "CodeSha256": "wx5zIL4591nggzcdgfRu220hfNrHDUIrF/CWOLblvPI="
             }
           },
           "ApiGatewayRestApi": {
@@ -372,7 +372,7 @@
               "AppLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1752398751984": {
+          "ApiGatewayDeployment1752413750919": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -437,7 +437,7 @@
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionnkmjqRNsA1tAR9VUGYdAREnjsizfLxOjmIFVW4J7hg"
+              "Ref": "AppLambdaVersionaL4MiruKomhR88tLcUXoQbiimpkEkZhefFTfuxMvv1Q"
             },
             "Export": {
               "Name": "sls-books-api-dev-AppLambdaFunctionQualifiedArn"
@@ -613,7 +613,7 @@
         "timeout": 6,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "AppLambdaVersionnkmjqRNsA1tAR9VUGYdAREnjsizfLxOjmIFVW4J7hg"
+        "versionLogicalId": "AppLambdaVersionaL4MiruKomhR88tLcUXoQbiimpkEkZhefFTfuxMvv1Q"
       }
     },
     "configValidationMode": "warn",
@@ -636,7 +636,7 @@
     "artifact": "C:\\Users\\jhuam\\Desktop\\AWS_Final\\services\\books-api\\.serverless\\books-api.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/books-api/dev/1752398757858-2025-07-13T09:25:57.858Z",
+    "artifactDirectoryName": "serverless/books-api/dev/1752413755547-2025-07-13T13:35:55.547Z",
     "artifact": "books-api.zip"
   }
 }

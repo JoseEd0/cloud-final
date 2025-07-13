@@ -8,6 +8,15 @@ from decimal import Decimal
 import boto3
 
 
+def decimal_serializer(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(
+        "Object of type {} is not JSON serializable".format(type(obj).__name__)
+    )
+
+
 def lambda_handler(event, context):
     """
     Handler mejorado para AWS Lambda que mane                # Verificar stock_quantity disponible
@@ -151,11 +160,11 @@ def lambda_handler(event, context):
                 )
 
                 cart_items = []
-                total = 0
+                total = Decimal("0")
 
                 for item in response["Items"]:
                     if item["sk"].startswith("ITEM#"):
-                        item_total = float(item.get("price", 0)) * int(
+                        item_total = Decimal(str(item.get("price", 0))) * int(
                             item.get("quantity", 1)
                         )
                         cart_items.append(
@@ -164,15 +173,24 @@ def lambda_handler(event, context):
                                 "book_id": item.get("book_id"),
                                 "title": item.get("title", "Unknown"),
                                 "author": item.get("author", "Unknown"),
-                                "price": float(item.get("price", 0)),
+                                "price": float(
+                                    item.get("price", 0)
+                                ),  # Mantener float para JSON
                                 "quantity": int(item.get("quantity", 1)),
-                                "subtotal": item_total,
+                                "subtotal": float(
+                                    item_total
+                                ),  # Mantener float para JSON
                                 "added_at": item.get("added_at"),
                                 "isbn": item.get("isbn", ""),
                                 "image_url": item.get("image_url", ""),
                             }
                         )
                         total += item_total
+
+                # Calcular resumen con Decimal
+                tax = (total * Decimal("0.08")).quantize(Decimal("0.01"))
+                shipping = Decimal("5.99") if total < 50 else Decimal("0")
+                final_total = (total + tax + shipping).quantize(Decimal("0.01"))
 
                 return {
                     "statusCode": 200,
@@ -181,17 +199,10 @@ def lambda_handler(event, context):
                         {
                             "cart_items": cart_items,
                             "summary": {
-                                "subtotal": total,
-                                "tax": round(total * 0.08, 2),  # 8% tax
-                                "shipping": (
-                                    5.99 if total < 50 else 0
-                                ),  # Free shipping over $50
-                                "total": round(
-                                    total
-                                    + (total * 0.08)
-                                    + (5.99 if total < 50 else 0),
-                                    2,
-                                ),
+                                "subtotal": float(total),
+                                "tax": float(tax),
+                                "shipping": float(shipping),
+                                "total": float(final_total),
                             },
                             "item_count": len(cart_items),
                             "updated_at": datetime.utcnow().isoformat(),
@@ -567,7 +578,7 @@ def lambda_handler(event, context):
 
                 # Validar inventario y calcular total
                 order_items = []
-                subtotal = 0
+                subtotal = Decimal("0")
 
                 for cart_item in cart_response["Items"]:
                     if cart_item["sk"].startswith("ITEM#"):
@@ -599,7 +610,7 @@ def lambda_handler(event, context):
                                 ),
                             }
 
-                        item_total = float(cart_item.get("price", 0)) * quantity
+                        item_total = Decimal(str(cart_item.get("price", 0))) * quantity
                         subtotal += item_total
 
                         order_items.append(
@@ -607,7 +618,7 @@ def lambda_handler(event, context):
                                 "book_id": cart_item["book_id"],
                                 "title": cart_item.get("title", "Unknown"),
                                 "author": cart_item.get("author", "Unknown"),
-                                "price": float(cart_item.get("price", 0)),
+                                "price": Decimal(str(cart_item.get("price", 0))),
                                 "quantity": quantity,
                                 "subtotal": item_total,
                                 "isbn": cart_item.get("isbn", ""),
@@ -615,9 +626,9 @@ def lambda_handler(event, context):
                         )
 
                 # Calcular totales
-                tax = round(subtotal * 0.08, 2)
-                shipping = 5.99 if subtotal < 50 else 0
-                total = round(subtotal + tax + shipping, 2)
+                tax = (subtotal * Decimal("0.08")).quantize(Decimal("0.01"))
+                shipping = Decimal("5.99") if subtotal < 50 else Decimal("0")
+                total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
 
                 # Crear orden
                 order_id = str(uuid.uuid4())
@@ -677,7 +688,7 @@ def lambda_handler(event, context):
                             "order": {
                                 "order_id": order_id,
                                 "status": "processing",
-                                "total": total,
+                                "total": float(total),
                                 "items_count": len(order_items),
                                 "estimated_delivery": (
                                     datetime.utcnow() + timedelta(days=7)
@@ -761,7 +772,8 @@ def lambda_handler(event, context):
                     "body": json.dumps(
                         create_pagination_response(
                             paginated_orders, page, limit, total_items
-                        )
+                        ),
+                        default=decimal_serializer,
                     ),
                 }
 
@@ -820,10 +832,10 @@ def lambda_handler(event, context):
                                 "status": order.get("status"),
                                 "payment_status": order.get("payment_status"),
                                 "payment_method": order.get("payment_method"),
-                                "subtotal": float(order.get("subtotal", 0)),
-                                "tax": float(order.get("tax", 0)),
-                                "shipping": float(order.get("shipping", 0)),
-                                "total": float(order.get("total", 0)),
+                                "subtotal": order.get("subtotal", 0),
+                                "tax": order.get("tax", 0),
+                                "shipping": order.get("shipping", 0),
+                                "total": order.get("total", 0),
                                 "items": order.get("items", []),
                                 "items_count": order.get("items_count", 0),
                                 "shipping_address": order.get("shipping_address", {}),
@@ -831,7 +843,8 @@ def lambda_handler(event, context):
                                 "created_at": order.get("created_at"),
                                 "updated_at": order.get("updated_at"),
                             }
-                        }
+                        },
+                        default=decimal_serializer,
                     ),
                 }
 
@@ -891,9 +904,7 @@ def lambda_handler(event, context):
                         if month_key not in monthly_stats:
                             monthly_stats[month_key] = {"orders": 0, "total": 0}
                         monthly_stats[month_key]["orders"] += 1
-                        monthly_stats[month_key]["total"] += float(
-                            order.get("total", 0)
-                        )
+                        monthly_stats[month_key]["total"] += order.get("total", 0)
 
                 return {
                     "statusCode": 200,
@@ -915,7 +926,8 @@ def lambda_handler(event, context):
                                 "monthly_stats": monthly_stats,
                                 "generated_at": datetime.utcnow().isoformat(),
                             }
-                        }
+                        },
+                        default=decimal_serializer,
                     ),
                 }
 

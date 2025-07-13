@@ -84,7 +84,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/purchases-api-v2/dev/1752398878933-2025-07-13T09:27:58.933Z/purchases-api-v2.zip"
+          "S3Key": "serverless/purchases-api-v2/dev/1752415219393-2025-07-13T14:00:19.393Z/purchases-api-v2.zip"
         },
         "Handler": "app.handler",
         "Runtime": "python3.9",
@@ -109,14 +109,14 @@
         "AppLogGroup"
       ]
     },
-    "AppLambdaVersionAktG1zGLACkGB3sJQaFYazwRqDwrFi9jqTOWwhweo": {
+    "AppLambdaVersionV2IU4l3hVyYMRQ9Rdzq4Nb6LLEw3PXuzK9CnxDBEth4": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
-        "CodeSha256": "QsNiAPeNEwEO1VpdrBs7add3FWGn64NnLvrPfrKaL10="
+        "CodeSha256": "EYJn9sSlwXv89cUy5WIHsCXVNqJWczCG0+J4bjCGpT8="
       }
     },
     "ApiGatewayRestApi": {
@@ -334,7 +334,7 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1752398877738": {
+    "ApiGatewayDeployment1752415218287": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -399,7 +399,7 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "AppLambdaVersionAktG1zGLACkGB3sJQaFYazwRqDwrFi9jqTOWwhweo"
+        "Ref": "AppLambdaVersionV2IU4l3hVyYMRQ9Rdzq4Nb6LLEw3PXuzK9CnxDBEth4"
       },
       "Export": {
         "Name": "sls-purchases-api-v2-dev-AppLambdaFunctionQualifiedArn"

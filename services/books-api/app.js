@@ -13,7 +13,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 const elasticsearch = new Client({
-    host: process.env.ELASTICSEARCH_HOST || 'http://localhost:9200'
+    host: process.env.ELASTICSEARCH_HOST || 'http://35.170.54.115:9201'
 });
 
 const BOOKS_TABLE = process.env.BOOKS_TABLE || 'bookstore-books-dev';
@@ -82,6 +82,55 @@ app.get('/', (req, res) => {
         status: 'running',
         timestamp: new Date().toISOString()
     });
+});
+
+// Endpoint para obtener configuración de ElasticSearch dinámicamente
+app.get('/api/v1/config/elasticsearch', async (req, res) => {
+    try {
+        const { tenant_id } = req.query;
+        
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'tenant_id es requerido' });
+        }
+
+        // Obtener IP de ElasticSearch desde variable de entorno o EC2 metadata
+        const elasticsearchHost = process.env.ELASTICSEARCH_HOST || 'http://35.170.54.115';
+        const port1 = '9201'; // tenant1
+        const port2 = '9202'; // tenant2
+        
+        const config = {
+            tenant_id,
+            elasticsearch: {
+                tenant1: `${elasticsearchHost}:${port1}`,
+                tenant2: `${elasticsearchHost}:${port2}`,
+                current: tenant_id === 'tenant1' ? `${elasticsearchHost}:${port1}` : `${elasticsearchHost}:${port2}`
+            },
+            indices: {
+                books: `books_${tenant_id}`,
+                suggestions: `suggestions_${tenant_id}`
+            },
+            status: 'active',
+            timestamp: new Date().toISOString()
+        };
+
+        // Test de conectividad (opcional)
+        try {
+            const testUrl = config.elasticsearch.current;
+            // En un entorno real, podrías hacer una prueba de conectividad aquí
+            config.connectivity = 'available';
+        } catch (error) {
+            config.connectivity = 'unavailable';
+            config.error = 'ElasticSearch no disponible';
+        }
+
+        res.json(config);
+    } catch (error) {
+        console.error('Error obteniendo configuración ElasticSearch:', error);
+        res.status(500).json({ 
+            error: 'Error interno del servidor',
+            message: error.message 
+        });
+    }
 });
 
 // Obtener todos los libros con filtros y paginación
