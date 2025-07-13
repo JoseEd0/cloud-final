@@ -48,9 +48,10 @@ plugins:
 
 custom:
   pythonRequirements:
-    dockerizePip: non-linux
+    dockerizePip: false
     slim: true
     strip: false
+    pythonBin: python3
 
 functions:
   app:
