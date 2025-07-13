@@ -138,17 +138,44 @@ serverless login
 serverless config
 ```
 
-### Paso 3: Obtener el código del proyecto
+### Paso 3: Clonar el proyecto actualizado
 
 ```bash
-# Clonar repositorio
+# Ir al directorio home
+cd ~
+
+# Si ya existe el proyecto, eliminarlo
+rm -rf cloud-final
+
+# Clonar el repositorio actualizado
 git clone https://github.com/JoseEd0/cloud-final.git
+
+# Ir al proyecto
 cd cloud-final
 
-# Instalar dependencias
+# Verificar que estás en la rama correcta
+git branch
+git log --oneline -n 3
+
+# Instalar dependencias del proyecto principal
 npm install
-cd services/books-api && npm install && cd ../..
+
+# Instalar dependencias de books-api (Node.js)
+cd services/books-api
+npm install
+cd ../..
+
+# Verificar que todo está listo
+ls -la
+ls -la services/
 ```
+
+**✅ Tu proyecto está listo con:**
+
+- Organización: `joseed`
+- Account ID: `328458381283`
+- Rol: `LabRole`
+- Todos los archivos serverless.yml configurados
 
 ---
 
@@ -629,38 +656,43 @@ tar -czf cloud-final-backup.tar.gz ~/cloud-final
 
 ---
 
-## 🎯 RESUMEN ULTRA-RÁPIDO
+## 🚀 COMANDOS LISTOS PARA TU EC2
 
-**Configuración inicial:**
+### ⚡ Ejecuta estos comandos EN TU EC2 UBUNTU:
 
-1. AWS Academy → EC2 → Crear instancia Cloud9Ubuntu
-2. SSH a EC2 → Instalar herramientas → Clonar proyecto
+```bash
+# 1. Ir al home y limpiar
+cd ~
+rm -rf cloud-final
 
-**Rutina diaria:**
+# 2. Clonar proyecto actualizado
+git clone https://github.com/JoseEd0/cloud-final.git
+cd cloud-final
 
-1. AWS Academy → Start Lab → SSH a EC2
-2. Configurar credenciales → Verificar Docker
-3. `cd ~/cloud-final` → Desplegar cambios
-4. `serverless deploy --stage dev` → ¡Listo!
+# 3. Instalar dependencias
+npm install
+cd services/books-api && npm install && cd ../..
 
-**Si algo falla:**
+# 4. Configurar credenciales AWS (copiar de AWS Academy)
+export AWS_ACCESS_KEY_ID="ASIA..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_SESSION_TOKEN="..."
+export AWS_DEFAULT_REGION="us-east-1"
 
-1. Verificar credenciales AWS
-2. Verificar que EC2 esté running
-3. Verificar Docker: `docker ps`
-4. Revisar logs: `serverless logs -f app --stage dev --tail`
+# 5. Verificar conexión
+aws sts get-caller-identity
 
-¡Tu entorno de desarrollo en EC2 está optimizado! 🚀
+# 6. Desplegar infraestructura
+serverless deploy --stage dev
+```
+
+**✅ TODO ESTÁ CONFIGURADO:**
+
+- ✅ Organización: `joseed`
+- ✅ Account ID: `328458381283`
+- ✅ Rol: `LabRole`
+- ✅ Framework: `>=3.0.0 <4.0.0`
+- ✅ Requirements.txt: Creados
+- ✅ Errores: Corregidos
 
 ---
-
-### 📋 CONFIGURACIÓN ESPECÍFICA PARA TU CUENTA
-
-**Tu información de AWS Academy:**
-
-- **Account ID**: `328458381283`
-- **Rol**: `LabRole`
-- **Organización Serverless**: `joseed`
-- **Región**: `us-east-1`
-
-**✅ Ya está configurado en todos los archivos serverless.yml**
