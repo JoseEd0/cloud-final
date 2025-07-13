@@ -49,17 +49,17 @@ functions:
     events:
       - stream:
           type: dynamodb
-          arn: "arn:aws:dynamodb:${self:provider.region}:328458381283:table/bookstore-books-${self:provider.stage}/stream/*"
+          arn:
+            Fn::ImportValue: bookstore-backend-${self:provider.stage}-BooksTableStreamArn
           batchSize: 10
           startingPosition: LATEST
-          maximumBatchingWindow: 5
 
   purchasesStreamProcessor:
     handler: purchases_stream_processor.handler
     events:
       - stream:
           type: dynamodb
-          arn: "arn:aws:dynamodb:${self:provider.region}:328458381283:table/bookstore-purchases-${self:provider.stage}/stream/*"
+          arn:
+            Fn::ImportValue: bookstore-backend-${self:provider.stage}-PurchasesTableStreamArn
           batchSize: 10
           startingPosition: LATEST
-          maximumBatchingWindow: 5

@@ -576,6 +576,11 @@ sudo usermod -aG docker $USER
 **Causa**: Configuración `dockerizePip: non-linux` busca python3.9 específico
 **Solución**: ✅ Cambiado a `dockerizePip: false` y `pythonBin: python3`
 
+### ❌ Error: "Could not find a version that satisfies the requirement python-decimal==0.1"
+
+**Causa**: Dependencia `python-decimal` no existe - decimal es built-in en Python
+**Solución**: ✅ Eliminada dependencia inválida, reemplazada por python-multipart
+
 ### ❌ Error: Stream processors fallan al desplegar
 
 **Causa**: Stream processors se despliegan antes que las tablas DynamoDB existan

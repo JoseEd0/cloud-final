@@ -157,3 +157,16 @@ Resources:
             ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
+
+Outputs:
+  BooksTableStreamArn:
+    Description: Stream ARN for Books table
+    Value: !GetAtt BooksTable.StreamArn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-BooksTableStreamArn
+
+  PurchasesTableStreamArn:
+    Description: Stream ARN for Purchases table
+    Value: !GetAtt PurchasesTable.StreamArn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-PurchasesTableStreamArn
