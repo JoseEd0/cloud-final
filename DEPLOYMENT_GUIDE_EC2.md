@@ -586,6 +586,12 @@ sudo usermod -aG docker $USER
 **Causa**: Stream processors se despliegan antes que las tablas DynamoDB existan
 **Solución**: ✅ Orden correcto: Infraestructura → APIs → Stream Processors
 
+### ❌ Error: "unrecognized property 'maximumBatchingWindow'" + "Stream not found"
+
+**Causa**: Propiedad stream incorrecta y ARN de stream con comodín no válido
+**Solución**: ✅ Eliminada propiedad inválida, usado ImportValue para ARNs correctos
+**Nota**: Se necesita redesplegar infraestructura para exportar Stream ARNs
+
 ---
 
 ## 📋 CHECKLIST RÁPIDO
@@ -740,5 +746,76 @@ serverless deploy --stage dev
 - Athena WorkGroup sin dependencias de roles
 - Uso exclusivo de LabRole existente
 - Sin creación de recursos IAM personalizados
+
+---
+
+## 🚨 TROUBLESHOOTING APIS - ERROR 502
+
+### ❌ Error: "Internal server error" / Error 502
+
+**Pasos para diagnosticar:**
+
+### 1. Renovar credenciales AWS (cada 4 horas)
+
+```bash
+# En tu EC2, configurar nuevas credenciales de AWS Academy
+export AWS_ACCESS_KEY_ID="ASIA..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_SESSION_TOKEN="..."
+export AWS_DEFAULT_REGION="us-east-1"
+
+# Verificar
+aws sts get-caller-identity
+```
+
+### 2. Probar endpoint básico primero
+
+```bash
+# Probar ruta raíz (debe funcionar)
+curl https://tf6775wga9.execute-api.us-east-1.amazonaws.com/dev/
+
+# Debería devolver: {"message": "Users API v1.0.0", "status": "running"}
+```
+
+### 3. Ver logs de Lambda
+
+```bash
+# Obtener logs más recientes
+aws logs describe-log-streams --log-group-name "/aws/lambda/users-api-dev-app" \
+  --order-by LastEventTime --descending --limit 1
+
+# Ver eventos del stream más reciente
+aws logs get-log-events --log-group-name "/aws/lambda/users-api-dev-app" \
+  --log-stream-name "STREAM_NAME_AQUI" --start-from-head
+```
+
+### 4. Verificar configuración de variables de entorno
+
+```bash
+# Ver configuración actual
+cd services/users-api
+serverless info --stage dev --verbose
+```
+
+### 5. Posibles causas comunes:
+
+- **Credenciales expiradas**: AWS Academy expira cada 4 horas
+- **Variables de entorno**: Archivo config/dev.yml no encontrado
+- **Tablas DynamoDB**: No existen o nombres incorrectos
+- **Permisos IAM**: LabRole sin permisos suficientes
+- **Ruta incorrecta**: FastAPI + API Gateway problemas de routing
+
+### 6. Comandos de diagnóstico rápido:
+
+```bash
+# Verificar que las tablas existen
+aws dynamodb list-tables
+
+# Verificar que la función Lambda existe
+aws lambda list-functions --query 'Functions[?contains(FunctionName, `users-api`)].FunctionName'
+
+# Verificar configuración de la función
+aws lambda get-function-configuration --function-name users-api-dev-app
+```
 
 ---
