@@ -696,3 +696,26 @@ serverless deploy --stage dev
 - ✅ Errores: Corregidos
 
 ---
+
+## ⚠️ LIMITACIONES AWS ACADEMY RESUELTAS
+
+**Problemas comunes en AWS Academy y sus soluciones:**
+
+### ❌ Error: "not authorized to perform: iam:CreateRole"
+
+**Causa**: AWS Academy no permite crear roles IAM personalizados
+**Solución**: ✅ Configuración simplificada que usa solo LabRole existente
+
+### ❌ Error: "Tagging permission error"
+
+**Causa**: Permisos limitados en AWS Academy
+**Solución**: ✅ Recursos simplificados sin dependencias de roles IAM
+
+### ✅ Configuración optimizada para AWS Academy:
+
+- Solo S3 Bucket para analytics (sin Glue personalizado)
+- Athena WorkGroup sin dependencias de roles
+- Uso exclusivo de LabRole existente
+- Sin creación de recursos IAM personalizados
+
+---

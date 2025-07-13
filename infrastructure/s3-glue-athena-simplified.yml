@@ -1,0 +1,39 @@
+Resources:
+  # S3 Bucket para Analytics (solo S3, sin Glue ni roles IAM)
+  AnalyticsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: bookstore-analytics-${self:provider.stage}-328458381283
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+
+  # Athena WorkGroup para consultas (sin dependencias de roles)
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: bookstore-workgroup-${self:provider.stage}
+      Description: WorkGroup para consultas de analytics del bookstore
+      State: ENABLED
+      WorkGroupConfiguration:
+        ResultConfiguration:
+          OutputLocation: !Sub "s3://${AnalyticsBucket}/athena-results/"
+        EnforceWorkGroupConfiguration: false
+        PublishCloudWatchMetrics: true
+
+Outputs:
+  AnalyticsBucketName:
+    Description: Name of the S3 bucket for analytics
+    Value: !Ref AnalyticsBucket
+    Export:
+      Name: ${self:service}-${self:provider.stage}-analytics-bucket
+
+  AthenaWorkGroupName:
+    Description: Name of the Athena WorkGroup
+    Value: !Ref AthenaWorkGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-athena-workgroup

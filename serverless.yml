@@ -50,4 +50,4 @@ custom:
 # Import all service configurations
 resources:
   - ${file(./infrastructure/dynamodb.yml)}
-  - ${file(./infrastructure/s3-glue-athena.yml)}
+  - ${file(./infrastructure/s3-glue-athena-simplified.yml)}
