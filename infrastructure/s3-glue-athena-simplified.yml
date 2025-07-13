@@ -23,7 +23,6 @@ Resources:
         ResultConfiguration:
           OutputLocation: !Sub "s3://${AnalyticsBucket}/athena-results/"
         EnforceWorkGroupConfiguration: false
-        PublishCloudWatchMetrics: true
 
 Outputs:
   AnalyticsBucketName:
