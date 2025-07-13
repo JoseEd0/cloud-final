@@ -20,11 +20,7 @@
 #### Windows - PowerShell como Administrador:
 
 ```powershell
-# 1. Instalar Chocolatey
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-
-# 2. Instalar herramientas
+# Instalar herramientas necesarias (ya tienes Chocolatey):
 choco install nodejs python awscli git docker-desktop -y
 ```
 
@@ -41,7 +37,7 @@ docker --version  # Docker Desktop
 
 ```bash
 npm install -g serverless
-sls --version  # 3.x+
+serverless --version
 ```
 
 ### Obtener el código
