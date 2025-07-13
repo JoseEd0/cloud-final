@@ -3,7 +3,7 @@ Resources:
   AnalyticsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: bookstore-analytics-${self:provider.stage}-${aws:AccountId}
+      BucketName: bookstore-analytics-${self:provider.stage}-328458381283
       VersioningConfiguration:
         Status: Enabled
       LifecycleConfiguration:

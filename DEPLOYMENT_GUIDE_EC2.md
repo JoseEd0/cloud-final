@@ -125,6 +125,19 @@ sudo npm install -g serverless
 serverless --version  # Debe mostrar 3.x.x
 ```
 
+### Paso 1.5: Configurar Serverless Framework con tu organización
+
+```bash
+# Configurar Serverless con tu organización (solo primera vez)
+serverless login
+
+# Cuando te abra el navegador, iniciar sesión con tu cuenta
+# Luego en terminal debería mostrar: "You are now logged into Serverless"
+
+# Verificar configuración
+serverless config
+```
+
 ### Paso 3: Obtener el código del proyecto
 
 ```bash
@@ -191,13 +204,16 @@ EOF
 # Ver si Docker está ejecutándose
 docker ps
 
-# Ver contenedores Elasticsearch
-docker ps | grep elasticsearch
+# Ver contenedores Elasticsearch existentes
+docker ps -a | grep elasticsearch
 
-# Si no están corriendo, iniciar
+# Si NO EXISTEN (primera vez), ir a la sección "Configurar Elasticsearch"
+# Si EXISTEN pero están parados, iniciar:
 docker start elasticsearch_tenant1
 docker start elasticsearch_tenant2
 ```
+
+**⚠️ IMPORTANTE: Si no existen los contenedores, ve a la sección "Configurar Elasticsearch" más abajo**
 
 ---
 
@@ -235,13 +251,22 @@ cd ../..
 
 **⏱️ Tiempo total: 10-15 minutos**
 
-### Configurar Elasticsearch (solo primera vez)
+### Configurar Elasticsearch (PRIMERA VEZ - OBLIGATORIO)
+
+**🚨 EJECUTAR ESTOS COMANDOS EN TU EC2 UBUNTU, NO EN WINDOWS:**
 
 ```bash
-# Crear red Docker
-docker network create elastic-network
+# PASO 1: Verificar que Docker funciona
+docker --version
+docker ps
 
-# Contenedor tenant1
+# PASO 2: Crear red Docker (solo primera vez)
+docker network create elastic-network || echo "Red ya existe"
+
+# PASO 3: Descargar imagen Elasticsearch (puede tardar 5-10 minutos)
+docker pull elasticsearch:7.17.9
+
+# PASO 4: Crear contenedor tenant1
 docker run -d --name elasticsearch_tenant1 \
   --network elastic-network \
   -p 9201:9200 \
@@ -250,7 +275,7 @@ docker run -d --name elasticsearch_tenant1 \
   -e "xpack.security.enabled=false" \
   elasticsearch:7.17.9
 
-# Contenedor tenant2
+# PASO 5: Crear contenedor tenant2
 docker run -d --name elasticsearch_tenant2 \
   --network elastic-network \
   -p 9202:9200 \
@@ -259,10 +284,19 @@ docker run -d --name elasticsearch_tenant2 \
   -e "xpack.security.enabled=false" \
   elasticsearch:7.17.9
 
-# Verificar que funcionan (esperar 2-3 minutos)
-curl http://localhost:9201
-curl http://localhost:9202
+# PASO 6: Verificar que están corriendo
+docker ps | grep elasticsearch
+
+# PASO 7: Esperar 2-3 minutos y probar conexión
+echo "Esperando que Elasticsearch inicie..."
+sleep 120
+
+# Verificar que responden (deberían devolver JSON)
+curl http://localhost:9201/_cluster/health
+curl http://localhost:9202/_cluster/health
 ```
+
+**✅ Si ves JSON con status "green" o "yellow", ¡está funcionando!**
 
 ---
 
@@ -422,6 +456,93 @@ sudo usermod -aG docker $USER
 
 ---
 
+## 🚨 SOLUCIÓN DE PROBLEMAS ESPECÍFICOS
+
+### ❌ Error: "No such container: elasticsearch_tenant1"
+
+**Causa**: Los contenedores de Elasticsearch no han sido creados todavía.
+
+**Solución completa paso a paso:**
+
+1. **Verificar que estás en EC2 Ubuntu (NO en Windows):**
+
+```bash
+# Este comando debe funcionar sin errores:
+docker --version
+# Si falla, estás en el lugar equivocado
+```
+
+2. **Crear los contenedores por primera vez:**
+
+```bash
+# Ir a tu EC2 por SSH
+ssh -i tu-key.pem ubuntu@[IP-DE-TU-EC2]
+
+# Una vez dentro de EC2:
+cd ~/cloud-final
+
+# Crear red Docker
+docker network create elastic-network
+
+# Crear contenedor tenant1
+docker run -d --name elasticsearch_tenant1 \
+  --network elastic-network \
+  -p 9201:9200 \
+  -e "discovery.type=single-node" \
+  -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+  -e "xpack.security.enabled=false" \
+  elasticsearch:7.17.9
+
+# Crear contenedor tenant2
+docker run -d --name elasticsearch_tenant2 \
+  --network elastic-network \
+  -p 9202:9200 \
+  -e "discovery.type=single-node" \
+  -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+  -e "xpack.security.enabled=false" \
+  elasticsearch:7.17.9
+
+# Verificar que están corriendo
+docker ps | grep elasticsearch
+```
+
+3. **Si ya existen pero están parados:**
+
+```bash
+docker start elasticsearch_tenant1
+docker start elasticsearch_tenant2
+```
+
+4. **Si existen pero con errores, eliminar y recrear:**
+
+```bash
+docker stop elasticsearch_tenant1 elasticsearch_tenant2
+docker rm elasticsearch_tenant1 elasticsearch_tenant2
+# Luego ejecutar los comandos docker run de arriba
+```
+
+### ❌ Error: Docker no funciona
+
+**Si estás en Windows y Docker no funciona:**
+
+- ❌ **NO** uses Docker Desktop en Windows para este proyecto
+- ✅ **SÍ** usa la instancia EC2 Ubuntu que configuraste
+
+**Si estás en EC2 y Docker no funciona:**
+
+```bash
+# Verificar estado de Docker
+sudo systemctl status docker
+
+# Si está parado, iniciarlo
+sudo systemctl start docker
+
+# Agregar tu usuario al grupo docker (logout/login después)
+sudo usermod -aG docker $USER
+```
+
+---
+
 ## 📋 CHECKLIST RÁPIDO
 
 ### Configuración inicial (solo primera vez):
@@ -530,3 +651,16 @@ tar -czf cloud-final-backup.tar.gz ~/cloud-final
 4. Revisar logs: `serverless logs -f app --stage dev --tail`
 
 ¡Tu entorno de desarrollo en EC2 está optimizado! 🚀
+
+---
+
+### 📋 CONFIGURACIÓN ESPECÍFICA PARA TU CUENTA
+
+**Tu información de AWS Academy:**
+
+- **Account ID**: `328458381283`
+- **Rol**: `LabRole`
+- **Organización Serverless**: `joseed`
+- **Región**: `us-east-1`
+
+**✅ Ya está configurado en todos los archivos serverless.yml**
