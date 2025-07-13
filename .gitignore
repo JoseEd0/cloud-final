@@ -1,0 +1,64 @@
+# Archivos sensibles
+*.pem
+*.key
+*.secret
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Python virtual environments
+venv/
+*/venv/
+.venv/
+*/.venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# Serverless
+.serverless/
+*/.serverless/
+
+# Dependencias locales
+deps/
+*/deps/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage reports
+.coverage
+.nyc_output
+coverage/
+
+# Build outputs
+dist/
+build/
+*.zip
+
+# Backup files
+*.backup
+*.bak
