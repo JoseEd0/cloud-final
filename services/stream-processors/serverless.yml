@@ -38,9 +38,10 @@ plugins:
 
 custom:
   pythonRequirements:
-    dockerizePip: non-linux
+    dockerizePip: false
     slim: true
     strip: false
+    pythonBin: python3
 
 functions:
   booksStreamProcessor:
@@ -48,22 +49,17 @@ functions:
     events:
       - stream:
           type: dynamodb
-          arn:
-            Fn::GetAtt: [BooksTable, StreamArn]
+          arn: "arn:aws:dynamodb:${self:provider.region}:328458381283:table/bookstore-books-${self:provider.stage}/stream/*"
           batchSize: 10
           startingPosition: LATEST
-          maximumBatchingWindowInSeconds: 5
+          maximumBatchingWindow: 5
 
   purchasesStreamProcessor:
     handler: purchases_stream_processor.handler
     events:
       - stream:
           type: dynamodb
-          arn:
-            Fn::GetAtt: [PurchasesTable, StreamArn]
+          arn: "arn:aws:dynamodb:${self:provider.region}:328458381283:table/bookstore-purchases-${self:provider.stage}/stream/*"
           batchSize: 10
           startingPosition: LATEST
-          maximumBatchingWindowInSeconds: 5
-
-resources:
-  - ${file(../../infrastructure/dynamodb.yml)}
+          maximumBatchingWindow: 5

@@ -711,6 +711,11 @@ serverless deploy --stage dev
 **Causa**: Permisos limitados en AWS Academy
 **Solución**: ✅ Recursos simplificados sin dependencias de roles IAM
 
+### ❌ Error: "extraneous key [PublishCloudWatchMetrics] is not permitted"
+
+**Causa**: Propiedad no válida en configuración de Athena WorkGroup
+**Solución**: ✅ Eliminada propiedad no compatible de la configuración
+
 ### ✅ Configuración optimizada para AWS Academy:
 
 - Solo S3 Bucket para analytics (sin Glue personalizado)
