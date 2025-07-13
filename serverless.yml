@@ -1,7 +1,7 @@
 service: bookstore-backend
 org: joseed
 
-frameworkVersion: "3"
+frameworkVersion: ">=3.0.0 <4.0.0"
 
 provider:
   name: aws
@@ -40,14 +40,12 @@ provider:
         - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}-328458381283/*"
 
 plugins:
-  - serverless-python-requirements
   - serverless-offline
 
 custom:
-  pythonRequirements:
-    dockerizePip: non-linux
-    slim: true
-    strip: false
+  # Configuración para desarrollo local
+  offline:
+    httpPort: 3000
 
 # Import all service configurations
 resources:
