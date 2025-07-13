@@ -252,26 +252,29 @@ docker start elasticsearch_tenant2
 # 1. Ir al proyecto
 cd ~/cloud-final
 
-# 2. Infraestructura base
+# 2. Infraestructura base (crea las tablas DynamoDB)
 serverless deploy --stage dev
 
-# 3. Stream Processors
-cd services/stream-processors
-serverless deploy --stage dev
-cd ../..
-
-# 4. Users API
+# 3. Users API
 cd services/users-api
 serverless deploy --stage dev
 cd ../..
 
-# 5. Books API
+# 4. Books API
 cd services/books-api
 serverless deploy --stage dev
 cd ../..
 
-# 6. Purchases API
+# 5. Purchases API
 cd services/purchases-api
+serverless deploy --stage dev
+cd ../..
+
+# 6. Verificar que las tablas existen antes de stream processors
+aws dynamodb list-tables
+
+# 7. Stream Processors (ÚLTIMO - depende de las tablas)
+cd services/stream-processors
 serverless deploy --stage dev
 cd ../..
 ```
@@ -567,6 +570,16 @@ sudo systemctl start docker
 # Agregar tu usuario al grupo docker (logout/login después)
 sudo usermod -aG docker $USER
 ```
+
+### ❌ Error: "spawn python3.9 ENOENT" en APIs Python
+
+**Causa**: Configuración `dockerizePip: non-linux` busca python3.9 específico
+**Solución**: ✅ Cambiado a `dockerizePip: false` y `pythonBin: python3`
+
+### ❌ Error: Stream processors fallan al desplegar
+
+**Causa**: Stream processors se despliegan antes que las tablas DynamoDB existan
+**Solución**: ✅ Orden correcto: Infraestructura → APIs → Stream Processors
 
 ---
 
