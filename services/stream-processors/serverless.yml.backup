@@ -1,0 +1,64 @@
+service: stream-processors
+org: joseed
+
+frameworkVersion: ">=3.0.0"
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  # Configuración específica para AWS Academy
+  iam:
+    role: arn:aws:iam::328458381283:role/LabRole
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    ELASTICSEARCH_HOST: ${file(../../config/${self:provider.stage}.yml):ELASTICSEARCH_HOST}
+    ANALYTICS_BUCKET: bookstore-analytics-${self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeStream
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:ListStreams
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/bookstore-*/stream/*"
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+      Resource:
+        - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}-*/*"
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    strip: false
+
+functions:
+  booksStreamProcessor:
+    handler: books_stream_processor.handler
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::ImportValue: bookstore-backend-${self:provider.stage}-BooksTableStreamArn
+          batchSize: 10
+          startingPosition: LATEST
+
+  purchasesStreamProcessor:
+    handler: purchases_stream_processor.handler
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::ImportValue: bookstore-backend-${self:provider.stage}-PurchasesTableStreamArn
+          batchSize: 10
+          startingPosition: LATEST

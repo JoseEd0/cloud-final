@@ -1,0 +1,964 @@
+{
+  "service": {
+    "service": "bookstore-api",
+    "serviceObject": {
+      "name": "bookstore-api"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "python3.9",
+      "region": "us-east-1",
+      "stage": "dev",
+      "iam": {
+        "role": "arn:aws:iam::328458381283:role/LabRole"
+      },
+      "environment": {
+        "STAGE": "dev",
+        "REGION": "us-east-1",
+        "DYNAMODB_REGION": "us-east-1",
+        "JWT_SECRET": "mi-secreto-super-seguro-jwt-2024",
+        "ELASTICSEARCH_HOST": "http://44.195.59.230:9201"
+      },
+      "iamRoleStatements": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:Query",
+            "dynamodb:Scan",
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+            "dynamodb:BatchGetItem",
+            "dynamodb:BatchWriteItem"
+          ],
+          "Resource": [
+            "arn:aws:dynamodb:us-east-1:328458381283:table/bookstore-*",
+            "arn:aws:dynamodb:us-east-1:328458381283:table/bookstore-*/index/*"
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetObject",
+            "s3:PutObject",
+            "s3:DeleteObject"
+          ],
+          "Resource": [
+            "arn:aws:s3:::bookstore-analytics-dev-328458381283/*",
+            "arn:aws:s3:::bookstore-images-dev-328458381283/*"
+          ]
+        }
+      ],
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "UsersTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-users-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "GSI1",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "gsi1pk",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "gsi1sk",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ],
+              "StreamSpecification": {
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              }
+            }
+          },
+          "BooksTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-books-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1sk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi2pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi2sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "GSI1",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "gsi1pk",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "gsi1sk",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                },
+                {
+                  "IndexName": "GSI2",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "gsi2pk",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "gsi2sk",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ],
+              "StreamSpecification": {
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              }
+            }
+          },
+          "UserFavoritesTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-user-favorites-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ]
+            }
+          },
+          "UserWishlistTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-user-wishlist-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ]
+            }
+          },
+          "ShoppingCartTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-shopping-cart-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ]
+            }
+          },
+          "PurchasesTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "bookstore-purchases-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "sk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1pk",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "gsi1sk",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "sk",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "GSI1",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "gsi1pk",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "gsi1sk",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ],
+              "StreamSpecification": {
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              }
+            }
+          },
+          "AnalyticsBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "bookstore-analytics-dev-328458381283",
+              "VersioningConfiguration": {
+                "Status": "Enabled"
+              },
+              "LifecycleConfiguration": {
+                "Rules": [
+                  {
+                    "Id": "DeleteOldVersions",
+                    "Status": "Enabled",
+                    "NoncurrentVersionExpirationInDays": 30
+                  }
+                ]
+              }
+            }
+          },
+          "AthenaWorkGroup": {
+            "Type": "AWS::Athena::WorkGroup",
+            "Properties": {
+              "Name": "bookstore-workgroup-dev",
+              "Description": "WorkGroup para consultas de analytics del bookstore",
+              "State": "ENABLED",
+              "WorkGroupConfiguration": {
+                "ResultConfiguration": {
+                  "OutputLocation": {
+                    "Fn::Sub": "s3://${AnalyticsBucket}/athena-results/"
+                  }
+                },
+                "EnforceWorkGroupConfiguration": false
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            },
+            "Export": {
+              "Name": "sls-bookstore-api-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "BooksTableStreamArn": {
+            "Description": "Stream ARN for Books table",
+            "Value": {
+              "Fn::GetAtt": [
+                "BooksTable",
+                "StreamArn"
+              ]
+            },
+            "Export": {
+              "Name": "bookstore-api-dev-BooksTableStreamArn"
+            }
+          },
+          "PurchasesTableStreamArn": {
+            "Description": "Stream ARN for Purchases table",
+            "Value": {
+              "Fn::GetAtt": [
+                "PurchasesTable",
+                "StreamArn"
+              ]
+            },
+            "Export": {
+              "Name": "bookstore-api-dev-PurchasesTableStreamArn"
+            }
+          },
+          "AnalyticsBucketName": {
+            "Description": "Name of the S3 bucket for analytics",
+            "Value": {
+              "Ref": "AnalyticsBucket"
+            },
+            "Export": {
+              "Name": "bookstore-api-dev-analytics-bucket"
+            }
+          },
+          "AthenaWorkGroupName": {
+            "Description": "Name of the Athena WorkGroup",
+            "Value": {
+              "Ref": "AthenaWorkGroup"
+            },
+            "Export": {
+              "Name": "bookstore-api-dev-athena-workgroup"
+            }
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      }
+    },
+    "custom": {
+      "offline": {
+        "httpPort": 3000
+      }
+    },
+    "plugins": [
+      "serverless-offline"
+    ],
+    "pluginsData": {},
+    "functions": {},
+    "resources": {
+      "Resources": {
+        "UsersTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-users-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "GSI1",
+                "KeySchema": [
+                  {
+                    "AttributeName": "gsi1pk",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "gsi1sk",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              }
+            ],
+            "StreamSpecification": {
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            }
+          }
+        },
+        "BooksTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-books-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1sk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi2pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi2sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "GSI1",
+                "KeySchema": [
+                  {
+                    "AttributeName": "gsi1pk",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "gsi1sk",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              },
+              {
+                "IndexName": "GSI2",
+                "KeySchema": [
+                  {
+                    "AttributeName": "gsi2pk",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "gsi2sk",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              }
+            ],
+            "StreamSpecification": {
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            }
+          }
+        },
+        "UserFavoritesTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-user-favorites-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ]
+          }
+        },
+        "UserWishlistTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-user-wishlist-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ]
+          }
+        },
+        "ShoppingCartTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-shopping-cart-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ]
+          }
+        },
+        "PurchasesTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "bookstore-purchases-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "sk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1pk",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "gsi1sk",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "pk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "sk",
+                "KeyType": "RANGE"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "GSI1",
+                "KeySchema": [
+                  {
+                    "AttributeName": "gsi1pk",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "gsi1sk",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              }
+            ],
+            "StreamSpecification": {
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            }
+          }
+        },
+        "AnalyticsBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "bookstore-analytics-dev-328458381283",
+            "VersioningConfiguration": {
+              "Status": "Enabled"
+            },
+            "LifecycleConfiguration": {
+              "Rules": [
+                {
+                  "Id": "DeleteOldVersions",
+                  "Status": "Enabled",
+                  "NoncurrentVersionExpirationInDays": 30
+                }
+              ]
+            }
+          }
+        },
+        "AthenaWorkGroup": {
+          "Type": "AWS::Athena::WorkGroup",
+          "Properties": {
+            "Name": "bookstore-workgroup-dev",
+            "Description": "WorkGroup para consultas de analytics del bookstore",
+            "State": "ENABLED",
+            "WorkGroupConfiguration": {
+              "ResultConfiguration": {
+                "OutputLocation": {
+                  "Fn::Sub": "s3://${AnalyticsBucket}/athena-results/"
+                }
+              },
+              "EnforceWorkGroupConfiguration": false
+            }
+          }
+        }
+      },
+      "Outputs": {
+        "BooksTableStreamArn": {
+          "Description": "Stream ARN for Books table",
+          "Value": {
+            "Fn::GetAtt": [
+              "BooksTable",
+              "StreamArn"
+            ]
+          },
+          "Export": {
+            "Name": "bookstore-api-dev-BooksTableStreamArn"
+          }
+        },
+        "PurchasesTableStreamArn": {
+          "Description": "Stream ARN for Purchases table",
+          "Value": {
+            "Fn::GetAtt": [
+              "PurchasesTable",
+              "StreamArn"
+            ]
+          },
+          "Export": {
+            "Name": "bookstore-api-dev-PurchasesTableStreamArn"
+          }
+        },
+        "AnalyticsBucketName": {
+          "Description": "Name of the S3 bucket for analytics",
+          "Value": {
+            "Ref": "AnalyticsBucket"
+          },
+          "Export": {
+            "Name": "bookstore-api-dev-analytics-bucket"
+          }
+        },
+        "AthenaWorkGroupName": {
+          "Description": "Name of the Athena WorkGroup",
+          "Value": {
+            "Ref": "AthenaWorkGroup"
+          },
+          "Export": {
+            "Name": "bookstore-api-dev-athena-workgroup"
+          }
+        }
+      }
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless.yml",
+    "initialServerlessConfig": {
+      "service": "bookstore-api",
+      "org": "joseed",
+      "frameworkVersion": ">=3.0.0",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "plugins": {
+        "$ref": "$[\"service\"][\"plugins\"]"
+      },
+      "custom": {
+        "$ref": "$[\"service\"][\"custom\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      }
+    },
+    "org": "joseed",
+    "layers": {},
+    "isDashboardMonitoringPreconfigured": true,
+    "isDashboardAppPreconfigured": false
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/bookstore-api/dev/1752397028773-2025-07-13T08:57:08.773Z",
+    "artifact": ""
+  }
+}

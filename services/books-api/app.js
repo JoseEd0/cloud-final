@@ -101,44 +101,85 @@ app.get('/api/v1/books', async (req, res) => {
         }
 
         const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        const limitNum = Math.min(parseInt(limit), 100); // Máximo 100 items
 
-        let params = {
-            TableName: BOOKS_TABLE,
-            KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: {
-                ':pk': `${tenant_id}#BOOKS`
-            },
-            ScanIndexForward: sort === 'created_at' ? false : true
-        };
+        let params;
+        let useQuery = false;
 
-        // Aplicar filtros
+        // Si hay filtros específicos, usar GSI
         if (category) {
-            params.IndexName = 'GSI1';
-            params.KeyConditionExpression = 'gsi1pk = :gsi1pk AND begins_with(gsi1sk, :category)';
-            params.ExpressionAttributeValues = {
-                ':gsi1pk': `${tenant_id}#CATEGORY`,
-                ':category': category
+            useQuery = true;
+            params = {
+                TableName: BOOKS_TABLE,
+                IndexName: 'GSI1',
+                KeyConditionExpression: 'gsi1pk = :gsi1pk AND begins_with(gsi1sk, :category)',
+                ExpressionAttributeValues: {
+                    ':gsi1pk': `${tenant_id}#CATEGORY`,
+                    ':category': category
+                },
+                FilterExpression: 'is_active = :is_active',
+                ExpressionAttributeValues: {
+                    ':gsi1pk': `${tenant_id}#CATEGORY`,
+                    ':category': category,
+                    ':is_active': true
+                }
+            };
+        } else if (author) {
+            useQuery = true;
+            params = {
+                TableName: BOOKS_TABLE,
+                IndexName: 'GSI2',
+                KeyConditionExpression: 'gsi2pk = :gsi2pk AND begins_with(gsi2sk, :author)',
+                ExpressionAttributeValues: {
+                    ':gsi2pk': `${tenant_id}#AUTHOR`,
+                    ':author': author
+                },
+                FilterExpression: 'is_active = :is_active',
+                ExpressionAttributeValues: {
+                    ':gsi2pk': `${tenant_id}#AUTHOR`,
+                    ':author': author,
+                    ':is_active': true
+                }
+            };
+        } else {
+            // Sin filtros específicos, usar scan con filtro de tenant
+            params = {
+                TableName: BOOKS_TABLE,
+                FilterExpression: 'tenant_id = :tenant_id AND is_active = :is_active',
+                ExpressionAttributeValues: {
+                    ':tenant_id': tenant_id,
+                    ':is_active': true
+                }
             };
         }
 
-        if (author) {
-            params.IndexName = 'GSI2';
-            params.KeyConditionExpression = 'gsi2pk = :gsi2pk AND begins_with(gsi2sk, :author)';
-            params.ExpressionAttributeValues = {
-                ':gsi2pk': `${tenant_id}#AUTHOR`,
-                ':author': author
-            };
+        let result;
+        if (useQuery) {
+            result = await dynamodb.query(params).promise();
+        } else {
+            result = await dynamodb.scan(params).promise();
         }
 
-        const result = await dynamodb.query(params).promise();
-        
+        // Ordenar los resultados
+        let sortedItems = result.Items;
+        if (sort === 'title') {
+            sortedItems.sort((a, b) => a.title.localeCompare(b.title));
+        } else if (sort === 'price') {
+            sortedItems.sort((a, b) => a.price - b.price);
+        } else if (sort === 'rating') {
+            sortedItems.sort((a, b) => b.rating - a.rating);
+        } else {
+            // Default: created_at desc
+            sortedItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
         // Paginación manual
+        const totalItems = sortedItems.length;
         const startIndex = (pageNum - 1) * limitNum;
         const endIndex = startIndex + limitNum;
-        const paginatedItems = result.Items.slice(startIndex, endIndex);
+        const paginatedItems = sortedItems.slice(startIndex, endIndex);
 
-        const response = createPaginationResponse(paginatedItems, pageNum, limitNum, result.Items.length);
+        const response = createPaginationResponse(paginatedItems, pageNum, limitNum, totalItems);
         res.json(response);
 
     } catch (error) {
@@ -206,146 +247,7 @@ app.post('/api/v1/books', async (req, res) => {
     }
 });
 
-// Obtener libro por ID
-app.get('/api/v1/books/:book_id', async (req, res) => {
-    try {
-        const { book_id } = req.params;
-        const { tenant_id } = req.query;
-
-        if (!tenant_id) {
-            return res.status(400).json({ error: 'tenant_id es requerido' });
-        }
-
-        // Primero intentamos buscar directamente
-        const params = {
-            TableName: BOOKS_TABLE,
-            KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: {
-                ':pk': `${tenant_id}#${book_id}`
-            }
-        };
-
-        const result = await dynamodb.query(params).promise();
-
-        if (result.Items.length === 0) {
-            return res.status(404).json({ error: 'Libro no encontrado' });
-        }
-
-        res.json(result.Items[0]);
-
-    } catch (error) {
-        console.error('Error obteniendo libro:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
-});
-
-// Actualizar libro
-app.put('/api/v1/books/:book_id', async (req, res) => {
-    try {
-        const { book_id } = req.params;
-        const { tenant_id } = req.query;
-
-        if (!tenant_id) {
-            return res.status(400).json({ error: 'tenant_id es requerido' });
-        }
-
-        const { error, value } = updateBookSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ error: error.details[0].message });
-        }
-
-        // Buscar el libro actual
-        const getCurrentBook = await dynamodb.query({
-            TableName: BOOKS_TABLE,
-            KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: {
-                ':pk': `${tenant_id}#${book_id}`
-            }
-        }).promise();
-
-        if (getCurrentBook.Items.length === 0) {
-            return res.status(404).json({ error: 'Libro no encontrado' });
-        }
-
-        const currentBook = getCurrentBook.Items[0];
-
-        // Construir la expresión de actualización
-        let updateExpression = 'SET updated_at = :updated_at';
-        let expressionAttributeValues = {
-            ':updated_at': new Date().toISOString()
-        };
-
-        Object.keys(value).forEach(key => {
-            updateExpression += `, ${key} = :${key}`;
-            expressionAttributeValues[`:${key}`] = value[key];
-        });
-
-        await dynamodb.update({
-            TableName: BOOKS_TABLE,
-            Key: {
-                pk: currentBook.pk,
-                sk: currentBook.sk
-            },
-            UpdateExpression: updateExpression,
-            ExpressionAttributeValues: expressionAttributeValues
-        }).promise();
-
-        res.json({ message: 'Libro actualizado exitosamente' });
-
-    } catch (error) {
-        console.error('Error actualizando libro:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
-});
-
-// Eliminar libro
-app.delete('/api/v1/books/:book_id', async (req, res) => {
-    try {
-        const { book_id } = req.params;
-        const { tenant_id } = req.query;
-
-        if (!tenant_id) {
-            return res.status(400).json({ error: 'tenant_id es requerido' });
-        }
-
-        // Buscar el libro actual
-        const getCurrentBook = await dynamodb.query({
-            TableName: BOOKS_TABLE,
-            KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: {
-                ':pk': `${tenant_id}#${book_id}`
-            }
-        }).promise();
-
-        if (getCurrentBook.Items.length === 0) {
-            return res.status(404).json({ error: 'Libro no encontrado' });
-        }
-
-        const currentBook = getCurrentBook.Items[0];
-
-        // Soft delete
-        await dynamodb.update({
-            TableName: BOOKS_TABLE,
-            Key: {
-                pk: currentBook.pk,
-                sk: currentBook.sk
-            },
-            UpdateExpression: 'SET is_active = :is_active, updated_at = :updated_at',
-            ExpressionAttributeValues: {
-                ':is_active': false,
-                ':updated_at': new Date().toISOString()
-            }
-        }).promise();
-
-        res.json({ message: 'Libro eliminado exitosamente' });
-
-    } catch (error) {
-        console.error('Error eliminando libro:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
-});
-
-// Buscar libros
+// Buscar libros (debe ir ANTES de /:book_id)
 app.get('/api/v1/books/search', async (req, res) => {
     try {
         const {
@@ -376,6 +278,11 @@ app.get('/api/v1/books/search', async (req, res) => {
                             {
                                 term: {
                                     tenant_id: tenant_id
+                                }
+                            },
+                            {
+                                term: {
+                                    is_active: true
                                 }
                             },
                             {
@@ -411,18 +318,24 @@ app.get('/api/v1/books/search', async (req, res) => {
             console.log('Elasticsearch no disponible, usando DynamoDB scan:', esError.message);
             
             // Fallback a DynamoDB scan
+            const searchTerms = q.toLowerCase().split(' ');
+            
             const params = {
                 TableName: BOOKS_TABLE,
-                FilterExpression: 'contains(title, :q) OR contains(author, :q) OR contains(description, :q) OR contains(category, :q)',
+                FilterExpression: 'tenant_id = :tenant_id AND is_active = :is_active',
                 ExpressionAttributeValues: {
-                    ':q': q
+                    ':tenant_id': tenant_id,
+                    ':is_active': true
                 }
             };
 
             const result = await dynamodb.scan(params).promise();
             
-            // Filtrar por tenant_id
-            const filteredItems = result.Items.filter(item => item.tenant_id === tenant_id);
+            // Filtrar por términos de búsqueda
+            const filteredItems = result.Items.filter(item => {
+                const searchableText = `${item.title} ${item.author} ${item.description} ${item.category}`.toLowerCase();
+                return searchTerms.some(term => searchableText.includes(term));
+            });
             
             // Paginación manual
             const startIndex = (pageNum - 1) * limitNum;
@@ -439,7 +352,119 @@ app.get('/api/v1/books/search', async (req, res) => {
     }
 });
 
-// Obtener libro por ISBN
+// Obtener categorías (debe ir ANTES de /:book_id)
+app.get('/api/v1/books/categories', async (req, res) => {
+    try {
+        const { tenant_id } = req.query;
+
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'tenant_id es requerido' });
+        }
+
+        const params = {
+            TableName: BOOKS_TABLE,
+            FilterExpression: 'tenant_id = :tenant_id AND is_active = :is_active',
+            ExpressionAttributeValues: {
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            },
+            ProjectionExpression: 'category'
+        };
+
+        const result = await dynamodb.scan(params).promise();
+        
+        // Extraer categorías únicas
+        const categories = [...new Set(result.Items.map(item => item.category).filter(Boolean))];
+
+        res.json({ categories });
+
+    } catch (error) {
+        console.error('Error obteniendo categorías:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Obtener autores (debe ir ANTES de /:book_id)
+app.get('/api/v1/books/authors', async (req, res) => {
+    try {
+        const { page = 1, limit = 50, tenant_id } = req.query;
+
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'tenant_id es requerido' });
+        }
+
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+
+        const params = {
+            TableName: BOOKS_TABLE,
+            FilterExpression: 'tenant_id = :tenant_id AND is_active = :is_active',
+            ExpressionAttributeValues: {
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            },
+            ProjectionExpression: 'author'
+        };
+
+        const result = await dynamodb.scan(params).promise();
+        
+        // Extraer autores únicos
+        const authors = [...new Set(result.Items.map(item => item.author).filter(Boolean))];
+        
+        // Paginación
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedAuthors = authors.slice(startIndex, endIndex);
+
+        const response = createPaginationResponse(paginatedAuthors, pageNum, limitNum, authors.length);
+        res.json(response);
+
+    } catch (error) {
+        console.error('Error obteniendo autores:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Recomendaciones (debe ir ANTES de /:book_id)
+app.get('/api/v1/books/recommendations', async (req, res) => {
+    try {
+        const { tenant_id, limit = 10 } = req.query;
+
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'tenant_id es requerido' });
+        }
+
+        // Retornamos libros con mejor rating o más recientes
+        const params = {
+            TableName: BOOKS_TABLE,
+            FilterExpression: 'tenant_id = :tenant_id AND is_active = :is_active AND rating >= :min_rating',
+            ExpressionAttributeValues: {
+                ':tenant_id': tenant_id,
+                ':is_active': true,
+                ':min_rating': 3.0
+            }
+        };
+
+        const result = await dynamodb.scan(params).promise();
+        
+        // Ordenar por rating y tomar los primeros N
+        const sortedBooks = result.Items
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, parseInt(limit));
+
+        res.json({
+            recommendations: sortedBooks,
+            total: sortedBooks.length,
+            based_on: 'rating'
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo recomendaciones:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Obtener libro por ISBN (debe ir ANTES de /:book_id)
 app.get('/api/v1/books/by-isbn/:isbn', async (req, res) => {
     try {
         const { isbn } = req.params;
@@ -451,10 +476,11 @@ app.get('/api/v1/books/by-isbn/:isbn', async (req, res) => {
 
         const params = {
             TableName: BOOKS_TABLE,
-            FilterExpression: 'isbn = :isbn AND tenant_id = :tenant_id',
+            FilterExpression: 'isbn = :isbn AND tenant_id = :tenant_id AND is_active = :is_active',
             ExpressionAttributeValues: {
                 ':isbn': isbn,
-                ':tenant_id': tenant_id
+                ':tenant_id': tenant_id,
+                ':is_active': true
             }
         };
 
@@ -472,114 +498,233 @@ app.get('/api/v1/books/by-isbn/:isbn', async (req, res) => {
     }
 });
 
-// Obtener categorías
-app.get('/api/v1/books/categories', async (req, res) => {
+// Obtener libro por ID (debe ir DESPUÉS de todas las rutas específicas)
+app.get('/api/v1/books/:book_id', async (req, res) => {
     try {
+        const { book_id } = req.params;
         const { tenant_id } = req.query;
 
         if (!tenant_id) {
             return res.status(400).json({ error: 'tenant_id es requerido' });
         }
 
+        // Buscar por book_id en todos los libros del tenant
         const params = {
             TableName: BOOKS_TABLE,
-            IndexName: 'GSI1',
-            KeyConditionExpression: 'gsi1pk = :gsi1pk',
+            FilterExpression: 'book_id = :book_id AND tenant_id = :tenant_id AND is_active = :is_active',
             ExpressionAttributeValues: {
-                ':gsi1pk': `${tenant_id}#CATEGORY`
-            },
-            ProjectionExpression: 'category'
+                ':book_id': book_id,
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            }
         };
 
-        const result = await dynamodb.query(params).promise();
-        
-        // Extraer categorías únicas
-        const categories = [...new Set(result.Items.map(item => item.category))];
+        const result = await dynamodb.scan(params).promise();
 
-        res.json({ categories });
+        if (result.Items.length === 0) {
+            return res.status(404).json({ error: 'Libro no encontrado' });
+        }
+
+        res.json(result.Items[0]);
 
     } catch (error) {
-        console.error('Error obteniendo categorías:', error);
+        console.error('Error obteniendo libro:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 
-// Obtener autores
-app.get('/api/v1/books/authors', async (req, res) => {
+// Actualizar libro
+app.put('/api/v1/books/:book_id', async (req, res) => {
     try {
-        const { page = 1, limit = 50, tenant_id } = req.query;
+        const { book_id } = req.params;
+        const { tenant_id } = req.query;
 
         if (!tenant_id) {
             return res.status(400).json({ error: 'tenant_id es requerido' });
         }
 
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        const { error, value } = updateBookSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
 
-        const params = {
+        // Buscar el libro actual
+        const getCurrentBook = await dynamodb.scan({
             TableName: BOOKS_TABLE,
-            IndexName: 'GSI2',
-            KeyConditionExpression: 'gsi2pk = :gsi2pk',
+            FilterExpression: 'book_id = :book_id AND tenant_id = :tenant_id AND is_active = :is_active',
             ExpressionAttributeValues: {
-                ':gsi2pk': `${tenant_id}#AUTHOR`
-            },
-            ProjectionExpression: 'author'
+                ':book_id': book_id,
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            }
+        }).promise();
+
+        if (getCurrentBook.Items.length === 0) {
+            return res.status(404).json({ error: 'Libro no encontrado' });
+        }
+
+        const currentBook = getCurrentBook.Items[0];
+
+        // Construir la expresión de actualización
+        let updateExpression = 'SET updated_at = :updated_at';
+        let expressionAttributeValues = {
+            ':updated_at': new Date().toISOString()
         };
 
-        const result = await dynamodb.query(params).promise();
-        
-        // Extraer autores únicos
-        const authors = [...new Set(result.Items.map(item => item.author))];
-        
-        // Paginación
-        const startIndex = (pageNum - 1) * limitNum;
-        const endIndex = startIndex + limitNum;
-        const paginatedAuthors = authors.slice(startIndex, endIndex);
+        Object.keys(value).forEach(key => {
+            updateExpression += `, ${key} = :${key}`;
+            expressionAttributeValues[`:${key}`] = value[key];
+        });
 
-        const response = createPaginationResponse(paginatedAuthors, pageNum, limitNum, authors.length);
-        res.json(response);
+        // Si se actualiza la categoría o autor, actualizar también los GSI
+        if (value.category) {
+            updateExpression += ', gsi1sk = :gsi1sk';
+            expressionAttributeValues[':gsi1sk'] = `${value.category}#${book_id}`;
+        }
+
+        if (value.author) {
+            updateExpression += ', gsi2sk = :gsi2sk';
+            expressionAttributeValues[':gsi2sk'] = `${value.author}#${book_id}`;
+        }
+
+        await dynamodb.update({
+            TableName: BOOKS_TABLE,
+            Key: {
+                pk: currentBook.pk,
+                sk: currentBook.sk
+            },
+            UpdateExpression: updateExpression,
+            ExpressionAttributeValues: expressionAttributeValues
+        }).promise();
+
+        res.json({ message: 'Libro actualizado exitosamente' });
 
     } catch (error) {
-        console.error('Error obteniendo autores:', error);
+        console.error('Error actualizando libro:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 
-// Recomendaciones (simplificado)
-app.get('/api/v1/books/recommendations/:user_id', async (req, res) => {
+// Eliminar libro
+app.delete('/api/v1/books/:book_id', async (req, res) => {
     try {
-        const { user_id } = req.params;
-        const { tenant_id, limit = 10 } = req.query;
+        const { book_id } = req.params;
+        const { tenant_id } = req.query;
 
         if (!tenant_id) {
             return res.status(400).json({ error: 'tenant_id es requerido' });
         }
 
-        // Por ahora, retornamos libros aleatorios con mejor rating
-        const params = {
+        // Buscar el libro actual
+        const getCurrentBook = await dynamodb.scan({
             TableName: BOOKS_TABLE,
-            KeyConditionExpression: 'begins_with(pk, :pk_prefix)',
+            FilterExpression: 'book_id = :book_id AND tenant_id = :tenant_id AND is_active = :is_active',
             ExpressionAttributeValues: {
-                ':pk_prefix': `${tenant_id}#`
-            },
-            FilterExpression: 'rating >= :min_rating',
-            ExpressionAttributeValues: {
-                ...{ ':pk_prefix': `${tenant_id}#` },
-                ':min_rating': 4.0
-            },
-            Limit: parseInt(limit)
-        };
+                ':book_id': book_id,
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            }
+        }).promise();
 
-        const result = await dynamodb.query(params).promise();
+        if (getCurrentBook.Items.length === 0) {
+            return res.status(404).json({ error: 'Libro no encontrado' });
+        }
+
+        const currentBook = getCurrentBook.Items[0];
+
+        // Soft delete
+        await dynamodb.update({
+            TableName: BOOKS_TABLE,
+            Key: {
+                pk: currentBook.pk,
+                sk: currentBook.sk
+            },
+            UpdateExpression: 'SET is_active = :is_active, updated_at = :updated_at',
+            ExpressionAttributeValues: {
+                ':is_active': false,
+                ':updated_at': new Date().toISOString()
+            }
+        }).promise();
+
+        res.json({ message: 'Libro eliminado exitosamente' });
+
+    } catch (error) {
+        console.error('Error eliminando libro:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Actualizar imagen del libro
+app.put('/api/v1/books/:book_id/image', async (req, res) => {
+    try {
+        const { book_id } = req.params;
+        const { tenant_id } = req.query;
+        const { cover_image_url } = req.body;
+
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'tenant_id es requerido' });
+        }
+
+        if (!cover_image_url) {
+            return res.status(400).json({ error: 'cover_image_url es requerido' });
+        }
+
+        // Validar que sea una URL válida
+        const imageUrlSchema = Joi.string().uri().required();
+        const { error } = imageUrlSchema.validate(cover_image_url);
+        if (error) {
+            return res.status(400).json({ error: 'cover_image_url debe ser una URL válida' });
+        }
+
+        // Buscar el libro actual
+        const getCurrentBook = await dynamodb.scan({
+            TableName: BOOKS_TABLE,
+            FilterExpression: 'book_id = :book_id AND tenant_id = :tenant_id AND is_active = :is_active',
+            ExpressionAttributeValues: {
+                ':book_id': book_id,
+                ':tenant_id': tenant_id,
+                ':is_active': true
+            }
+        }).promise();
+
+        if (getCurrentBook.Items.length === 0) {
+            return res.status(404).json({ error: 'Libro no encontrado' });
+        }
+
+        const currentBook = getCurrentBook.Items[0];
+
+        // Actualizar la imagen
+        await dynamodb.update({
+            TableName: BOOKS_TABLE,
+            Key: {
+                pk: currentBook.pk,
+                sk: currentBook.sk
+            },
+            UpdateExpression: 'SET cover_image_url = :cover_image_url, updated_at = :updated_at',
+            ExpressionAttributeValues: {
+                ':cover_image_url': cover_image_url,
+                ':updated_at': new Date().toISOString()
+            }
+        }).promise();
+
+        // Obtener el libro actualizado
+        const updatedBook = await dynamodb.get({
+            TableName: BOOKS_TABLE,
+            Key: {
+                pk: currentBook.pk,
+                sk: currentBook.sk
+            }
+        }).promise();
 
         res.json({
-            recommendations: result.Items,
-            user_id: user_id,
-            based_on: 'rating'
+            message: 'Imagen del libro actualizada exitosamente',
+            book_id: book_id,
+            cover_image_url: cover_image_url,
+            book: updatedBook.Item
         });
 
     } catch (error) {
-        console.error('Error obteniendo recomendaciones:', error);
+        console.error('Error actualizando imagen del libro:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 });

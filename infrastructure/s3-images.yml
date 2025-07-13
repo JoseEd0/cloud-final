@@ -1,0 +1,52 @@
+Resources:
+  # S3 Bucket para Images
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: bookstore-images-${self:provider.stage}-328458381283
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3000
+
+  # Política del bucket para permitir acceso público de lectura
+  ImagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImagesBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub "${ImagesBucket}/*"
+
+Outputs:
+  ImagesBucketName:
+    Description: Name of the S3 bucket for images
+    Value: !Ref ImagesBucket
+    Export:
+      Name: ${self:service}-${self:provider.stage}-images-bucket
+
+  ImagesBucketUrl:
+    Description: URL of the S3 bucket for images
+    Value: !Sub "https://${ImagesBucket}.s3.amazonaws.com"
+    Export:
+      Name: ${self:service}-${self:provider.stage}-images-bucket-url

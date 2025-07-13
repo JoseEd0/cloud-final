@@ -1,8 +1,6 @@
 service: stream-processors
 org: joseed
-
-frameworkVersion: ">=3.0.0 <4.0.0"
-
+frameworkVersion: ">=3.0.0"
 provider:
   name: aws
   runtime: python3.9
@@ -15,7 +13,7 @@ provider:
     STAGE: ${self:provider.stage}
     REGION: ${self:provider.region}
     ELASTICSEARCH_HOST: ${file(../../config/${self:provider.stage}.yml):ELASTICSEARCH_HOST}
-    ANALYTICS_BUCKET: bookstore-analytics-${self:provider.stage}
+    ANALYTICS_BUCKET: ${file(../../config/${self:provider.stage}.yml):ANALYTICS_BUCKET}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -31,7 +29,7 @@ provider:
         - s3:PutObject
         - s3:DeleteObject
       Resource:
-        - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}-*/*"
+        - "arn:aws:s3:::bookstore-analytics-*/*"
 
 plugins:
   - serverless-python-requirements
@@ -48,17 +46,15 @@ functions:
     events:
       - stream:
           type: dynamodb
-          arn:
-            Fn::ImportValue: bookstore-backend-${self:provider.stage}-BooksTableStreamArn
+          arn: "arn:aws:dynamodb:us-east-1:328458381283:table/bookstore-books-dev/stream/2025-07-13T02:26:28.785"
           batchSize: 10
           startingPosition: LATEST
-
+  
   purchasesStreamProcessor:
     handler: purchases_stream_processor.handler
     events:
       - stream:
           type: dynamodb
-          arn:
-            Fn::ImportValue: bookstore-backend-${self:provider.stage}-PurchasesTableStreamArn
+          arn: "arn:aws:dynamodb:us-east-1:328458381283:table/bookstore-purchases-dev/stream/2025-07-13T02:26:28.850"
           batchSize: 10
           startingPosition: LATEST

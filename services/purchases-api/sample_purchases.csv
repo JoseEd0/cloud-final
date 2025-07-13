@@ -1,0 +1,4 @@
+purchase_id,user_id,tenant_id,total,status,created_at,items_count,items
+test-purchase-001,84cba836-9b31-4b40-87db-03307c893ad1,tenant1,59.98,completed,2025-07-13T05:20:00.000Z,2,"[{\"book_id\": \"5b274ac7-c6c7-4d0a-a62e-a0a3c3fe1ee2\", \"quantity\": 2, \"price\": 19.99}]"
+test-purchase-002,84cba836-9b31-4b40-87db-03307c893ad1,tenant1,29.99,completed,2025-07-13T05:21:00.000Z,1,"[{\"book_id\": \"f63e71d7-83b4-4b2e-a097-be5e55ccdf57\", \"quantity\": 1, \"price\": 29.99}]"
+test-purchase-003,84cba836-9b31-4b40-87db-03307c893ad1,tenant1,89.97,pending,2025-07-13T05:22:00.000Z,3,"[{\"book_id\": \"5b274ac7-c6c7-4d0a-a62e-a0a3c3fe1ee2\", \"quantity\": 3, \"price\": 19.99}]"

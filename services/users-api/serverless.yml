@@ -35,14 +35,9 @@ provider:
         - "arn:aws:dynamodb:${self:provider.region}:*:table/bookstore-*/index/*"
 
 plugins:
-  - serverless-python-requirements
   - serverless-offline
 
-custom:
-  pythonRequirements:
-    dockerizePip: true
-    slim: true
-    strip: false
+custom: {}
 
 functions:
   app:

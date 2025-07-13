@@ -1,0 +1,68 @@
+service: images-api
+org: joseed
+
+frameworkVersion: ">=3.0.0"
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  # Configuración específica para AWS Academy
+  iam:
+    role: arn:aws:iam::328458381283:role/LabRole
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    IMAGES_BUCKET: bookstore-images-${self:provider.stage}-328458381283
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:GetObjectAcl
+        - s3:PutObjectAcl
+      Resource:
+        - "arn:aws:s3:::bookstore-images-${self:provider.stage}-328458381283/*"
+    - Effect: Allow
+      Action:
+        - s3:ListBucket
+      Resource:
+        - "arn:aws:s3:::bookstore-images-${self:provider.stage}-328458381283"
+
+plugins:
+  - serverless-offline
+
+custom: {}
+
+functions:
+  app:
+    handler: app.lambda_handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Tenant-ID
+            allowCredentials: false
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Tenant-ID
+            allowCredentials: false

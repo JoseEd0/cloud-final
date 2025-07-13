@@ -1,7 +1,7 @@
-service: bookstore-backend
+service: bookstore-api
 org: joseed
 
-frameworkVersion: ">=3.0.0 <4.0.0"
+frameworkVersion: ">=3.0.0"
 
 provider:
   name: aws
@@ -38,6 +38,7 @@ provider:
         - s3:DeleteObject
       Resource:
         - "arn:aws:s3:::bookstore-analytics-${self:provider.stage}-328458381283/*"
+        - "arn:aws:s3:::bookstore-images-${self:provider.stage}-328458381283/*"
 
 plugins:
   - serverless-offline
