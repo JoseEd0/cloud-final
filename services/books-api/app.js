@@ -13,7 +13,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 const elasticsearch = new Client({
-    host: process.env.ELASTICSEARCH_HOST || 'http://35.170.54.115:9201'
+    host: process.env.ELASTICSEARCH_HOST || 'http://3.237.98.83:9201'
 });
 
 const BOOKS_TABLE = process.env.BOOKS_TABLE || 'bookstore-books-dev';
