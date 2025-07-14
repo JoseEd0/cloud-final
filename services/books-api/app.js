@@ -13,7 +13,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 const elasticsearch = new Client({
-    host: process.env.ELASTICSEARCH_HOST || 'http://3.237.98.83:9201'
+    host: process.env.ELASTICSEARCH_HOST || 'http://3.219.237.123:9201'
 });
 
 const BOOKS_TABLE = process.env.BOOKS_TABLE || 'bookstore-books-dev';
@@ -94,7 +94,7 @@ app.get('/api/v1/config/elasticsearch', async (req, res) => {
         }
 
         // Obtener IP de ElasticSearch desde variable de entorno o EC2 metadata
-        const elasticsearchHost = process.env.ELASTICSEARCH_HOST || 'http://35.170.54.115';
+        const elasticsearchHost = process.env.ELASTICSEARCH_HOST || 'http://3.235.240.181';
         const port1 = '9201'; // tenant1
         const port2 = '9202'; // tenant2
         
